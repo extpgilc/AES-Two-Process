@@ -72,7 +72,7 @@ architecture rtl of AesEnc is
    -----------------------------------------------------------------------------
    -- mix columns
    -----------------------------------------------------------------------------   		 
-   MixColumnsInst : entity work.MixColumnsInst
+   MixColumnsInst : entity work.MixColumns
       port map (
 	     input_data  => shiftrows_output,
 	     output_data => mixcol_output);
@@ -113,7 +113,7 @@ architecture rtl of AesEnc is
    -----------------------------------------------------------------------------
    -- COMBINATIONAL LOGIC
    -----------------------------------------------------------------------------   
-   comb : process()
+   comb : process(r, rst, key, plaintext)
       variable v : RegType;
    begin
       v := r;
