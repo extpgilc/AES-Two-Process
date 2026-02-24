@@ -29,10 +29,11 @@ architecture rtl of KeySchedule is
      input  => (others => '0'),
 	 output => (others => '0'));
    
-   signal feedback : slv (127 downto 0);
-   
+   -- Signal definitions
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
+
+   signal feedback : slv (127 downto 0);
    
 begin
 

@@ -28,10 +28,11 @@ architecture rtl of EncController is
      input  => (others => '0'),
 	 output => (others => '0'));
    
-   signal feedback : slv (7 downto 0);
-   
+   -- Signal definitions
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
+   
+   signal feedback : slv (7 downto 0);
 	
 begin
 
