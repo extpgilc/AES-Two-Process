@@ -1,0 +1,5 @@
+cocotb
+cocotb-test
+coverage
+pytest
+pytest-cov
