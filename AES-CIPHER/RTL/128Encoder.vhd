@@ -8,7 +8,7 @@ use surf.StdRtlPkg.all;
 library aes;
 use aes.AesGf2Pkg.all;
 
-entity 128Encoder is
+entity Encoder is
    generic (
       TPD_G      : time := 1 ns);   -- Simulated propagation delay
    port (
@@ -18,9 +18,9 @@ entity 128Encoder is
       plaintext  : in  slv (127 downto 0);
       ciphertext : out slv (127 downto 0);
       done       : out sl);
-end entity 128Encoder;
+end entity Encoder;
 
-architecture rtl of 128Encoder is
+architecture rtl of Encoder is
    -- Constants
    constant NR : integer := 10;   -- AES has 10 rounds for a key of size 128 bits
     
@@ -42,8 +42,6 @@ architecture rtl of 128Encoder is
       state         : slv (127 downto 0);
    end record RegType;
    
-   type rcon_array is array (0 to 10) of slv (31 downto 0);
-   
    
    -- Register initialization
    constant REG_INIT_C : RegType := (
@@ -51,20 +49,7 @@ architecture rtl of 128Encoder is
        machine_state => IDLE_S,
        round_key     => key,
        state         => plaintext);
-       
-   constant Rcon : rcon_array := (
-      x"00000000",  -- índice 0 (no se usa en AES-128)
-      x"01000000",
-      x"02000000",
-      x"04000000",
-      x"08000000",
-      x"10000000",
-      x"20000000",
-      x"40000000",
-      x"80000000",
-      x"1B000000",
-      x"36000000"
-   );
+      
    
    -- Register interface    
    signal r   : RegType := REG_INIT_C;
@@ -94,7 +79,7 @@ begin
             
          when KEY_EXPANSION_S =>
             -- function KeyExpansion
-            v.round_key      := keyExpansion (r.round_key, rcon[r.number_round]);
+            v.round_key      := keyExpansion (r.round_key, r.number_round);
             v.machine_state  := SUB_BYTES_S;
             
          when SUB_BYTES_S =>

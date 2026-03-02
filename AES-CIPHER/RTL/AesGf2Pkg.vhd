@@ -23,7 +23,23 @@ package AesGf2Pkg is
    function invSubBox        (byte   : slv (7  downto 0)) return slv (7  downto 0);
    
    -- Key expansion functions
-   function keyExpansion (key : slv (127 downto 0); rcon : slv (31 downto 0)) return slv (127 downto 0);
+   function keyExpansion (key : slv (127 downto 0); number_round : integer) return slv (127 downto 0);
+   
+   type rcon_array is array (0 to 10) of slv (31 downto 0);
+
+   constant RCON_C : rcon_array := (
+      x"00000000",
+      x"01000000",
+      x"02000000",
+      x"04000000",
+      x"08000000",
+      x"10000000",
+      x"20000000",
+      x"40000000",
+      x"80000000",
+      x"1B000000",
+      x"36000000"
+   );
    
 
 end AesGf2Pkg;
@@ -32,8 +48,8 @@ package body AesGf2Pkg is
 
 
    function keyExpansion (
-      key  : slv (127 downto 0);
-      rcon : slv (31 downto 0)) return slv (127 downto 0) is
+      key          : slv (127 downto 0);
+      number_round : integer) return slv (127 downto 0) is
       variable round_key                            : slv (127 downto 0);
       variable w0, w1, w2, w3, w4, w5, w6, w7, temp : slv (31  downto 0);
    begin
@@ -47,7 +63,7 @@ package body AesGf2Pkg is
       temp (15 downto  8) := subBox(w3 (7  downto  0));
       temp (7  downto  0) := subBox(w3 (31 downto 24));
       
-      temp := temp xor rcon;
+      temp := temp xor RCON_C (number_round);
       
       w4 := w0 xor temp;
       w5 := w4 xor w1;
@@ -82,7 +98,7 @@ package body AesGf2Pkg is
    begin
       for i in 0 to 15 loop
          output_data ((i + 1)*8 - 1 downto i*8) := 
-            sBox (state((i + 1)*8 - 1 downto i*8));
+            subBox (state((i + 1)*8 - 1 downto i*8));
       end loop;
       return output_data;
    end function subBytes;
@@ -125,17 +141,17 @@ package body AesGf2Pkg is
    variable v              : slv (31 downto 0);
    variable s0, s1, s2, s3 : slv (7 downto 0);
    begin
-      a0 := column(31 downto 24);
-      a1 := column(23 downto 16);
-      a2 := column(15 downto  8);
-      a3 := column(7  downto  0);
+      s0 := column(31 downto 24);
+      s1 := column(23 downto 16);
+      s2 := column(15 downto  8);
+      s3 := column(7  downto  0);
    
       v (31 downto 24) := multby2(s0) xor multby3(s1) xor s2 xor s3;
 	  v (23 downto 16) := s0 xor multby2(s1) xor multby3(s2) xor s3;
 	  v (15 downto  8) := s0 xor s1 xor multby2(s2) xor multby3(s3);
 	  v (7  downto  0) := multby3(s0) xor s1 xor s2 xor multby2(s3);
 	  return v;
-   end function
+   end function columnCalculator;
    
    function multby2 (
       byte : slv (7 downto 0)) return slv (7 downto 0) is
@@ -155,7 +171,7 @@ package body AesGf2Pkg is
    
 
    function subBox (
-      byte : slv (7 downto 0)) return slv (7 downto 0);
+      byte : slv (7 downto 0)) return slv (7 downto 0) is
    begin
       case byte is
          when x"00" => return x"63";
@@ -419,7 +435,7 @@ package body AesGf2Pkg is
    end function subBox;
 
    function invSubBox(
-      byte : slv(7 downto 0)) return slv is
+      byte : slv(7 downto 0)) return slv (7 downto 0) is
    begin
       case byte is
          when x"00" => return x"52";
