@@ -1,3 +1,5 @@
+-- Documentation AES-128: chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=901427
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -15,6 +17,8 @@ package AesGf2Pkg is
 
    -- Auxialiary functions
    function columnCalculator (column : slv (31 downto 0)) return slv (31 downto 0);
+   function multby2          (byte   : slv (7  downto 0)) return slv (7  downto 0);
+   function multby3          (byte   : slv (7  downto 0)) return slv (7  downto 0);
    function subBox           (byte   : slv (7  downto 0)) return slv (7  downto 0);
    function invSubBox        (byte   : slv (7  downto 0)) return slv (7  downto 0);
 
@@ -33,6 +37,7 @@ package body AesGf2Pkg is
       output_data (127 downto 96) := columnCalculator (state (127 downto 96));
       return output_data;
    end function mixColumns;
+   
 
    function subBytes (
       state : slv (127 downto 0)) return slv (127 downto 0) is
@@ -44,6 +49,7 @@ package body AesGf2Pkg is
       end loop;
       return output_data;
    end function subBytes;
+   
 
    function shiftRows (
       state : slv (127 downto 0)) return slv (127 downto 0) is
@@ -67,6 +73,7 @@ package body AesGf2Pkg is
       output_data (8*1 - 1  downto  8*0) := state (8*1  - 1 downto  8*0); 
       return output_data;
    end function shiftRows;
+   
 
    function addRoundKey (
       state : slv (127 downto 0);
@@ -74,6 +81,41 @@ package body AesGf2Pkg is
    begin
       return state xor key;
    end function addRoundKey;
+   
+   
+   function columnCalculator (
+      column : slv (31 downto 0)) return slv (31 downto 0) is
+   variable v              : slv (31 downto 0);
+   variable s0, s1, s2, s3 : slv (7 downto 0);
+   begin
+      a0 := column(31 downto 24);
+      a1 := column(23 downto 16);
+      a2 := column(15 downto  8);
+      a3 := column(7  downto  0);
+   
+      v (31 downto 24) := multby2(s0) xor multby3(s1) xor s2 xor s3;
+	  v (23 downto 16) := s0 xor multby2(s1) xor multby3(s2) xor s3;
+	  v (15 downto  8) := s0 xor s1 xor multby2(s2) xor multby3(s3);
+	  v (7  downto  0) := multby3(s0) xor s1 xor s2 xor multby2(s3);
+	  return v;
+   end function
+   
+   function multby2 (
+      byte : slv (7 downto 0)) return slv (7 downto 0) is
+      variable shifted_byte    : slv (7 downto 0);
+      variable conditional_xor : slv (7 downto 0);
+   begin
+      shifted_byte    := byte(6 downto 0) & "0";
+      conditional_xor := "000" & byte(7) & byte(7) & "0" & byte(7) & byte(7);
+      return shifted_byte xor conditional_xor;
+   end function multby2;
+   
+   function multby3 (
+      byte : slv (7 downto 0)) return slv (7 downto 0) is
+   begin
+      return multby2(byte) xor byte;
+   end function multby3;
+   
 
    function subBox (
       byte : slv (7 downto 0)) return slv (7 downto 0);
