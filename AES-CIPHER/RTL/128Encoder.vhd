@@ -5,6 +5,9 @@ use ieee.numeric_std.all;
 library surf;
 use surf.StdRtlPkg.all;
 
+library aes;
+use aes.AesGf2Pkg.all;
+
 entity 128Encoder is
    generic (
       TPD_G      : time := 1 ns);   -- Simulated propagation delay
@@ -39,51 +42,36 @@ architecture rtl of 128Encoder is
       state         : slv (127 downto 0);
    end record RegType;
    
+   type rcon_array is array (0 to 10) of slv (31 downto 0);
+   
+   
    -- Register initialization
    constant REG_INIT_C : RegType := (
        number_round  => 0,
        machine_state => IDLE_S,
        round_key     => key,
        state         => plaintext);
+       
+   constant Rcon : rcon_array := (
+      x"00000000",  -- índice 0 (no se usa en AES-128)
+      x"01000000",
+      x"02000000",
+      x"04000000",
+      x"08000000",
+      x"10000000",
+      x"20000000",
+      x"40000000",
+      x"80000000",
+      x"1B000000",
+      x"36000000"
+   );
    
    -- Register interface    
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
    
-   -- Signals to entities
-   signal key_expansion_in  : slv (127 downto 0);
-   signal key_expansion_out : slv (127 downto 0);
-   signal sub_bytes_in      : slv (127 downto 0);
-   signal sub_bytes_out     : slv (127 downto 0);
-   signal shift_rows_in     : slv (127 downto 0);
-   signal shift_rows_out    : slv (127 downto 0);
-   signal mix_columns_in    : slv (127 downto 0);
-   signal mix_columns_out   : slv (127 downto 0);
 
 begin
-
-   ------------------------------------------------------------------------------------------------
-   -- Entity instances
-   ------------------------------------------------------------------------------------------------
-   KeyExpansionInst : entity aes.KeyExpansion
-      port map (
-         input_data  => key_expansion_in,
-         output_data => key_expansion_out);   -- Output obtained is one of the 11 round keys
-   
-   SubBytesInst : entity aes.SubBytes
-      port map (
-         input_data  => sub_bytes_in,
-         output_data => sub_bytes_out);
-         
-   ShiftRowsInst : entity aes.ShiftRows
-      port map (
-         input_data  => shift_rows_in,
-         output_data => shift_rows_out);
-         
-   MixColumnsInst : entity aes.MixColumns
-      port map (
-         input_data  => mix_columns_in,
-         output_data => mix_columns_out);
 
    ------------------------------------------------------------------------------------------------
    -- Combinational logic
@@ -94,41 +82,48 @@ begin
       v := r;
       
       case (r.machine_state) is
+         when IDLE_S =>
+            v               := REG_INIT_C;
+            v.machine_state := FIRST_STATE_ADD_S;
+         
          when FIRST_STATE_ADD_S =>
-            v.state := r.state xor r.round_key;
+            -- function AddRoundKey
+            v.state         := addRoundKey (r.state, r.round_key);
+            v.number_round  := r.number_round + 1;
             v.machine_state := KEY_EXPANSION_S;
             
          when KEY_EXPANSION_S =>
-            key_expansion_in := r.round_key;
-            v.round_key      := key_expansion_out;
+            -- function KeyExpansion
+            v.round_key      := keyExpansion (r.round_key, rcon[r.number_round]);
             v.machine_state  := SUB_BYTES_S;
             
          when SUB_BYTES_S =>
-            sub_bytes_in    := r.state;
-            v.state         := sub_bytes_out;
+            -- function SubBytes
+            v.state := subBytes (r.state);
             v.machine_state := SHIFT_ROWS_S;
          
          when SHIFT_ROWS_S =>
-            shift_rows_in   := r.state;
-            v.state         := shift_rows_out;
+            -- function ShiftRows
+            v.state := shiftRows (r.state);
             if r.number_round = 10 then
                v.machine_state := ADD_ROUND_KEY_S;
-            else
+            else 
                v.machine_state := MIX_COLUMNS_S;
             end if;
-         
+            
          when MIX_COLUMNS_S =>
-            mix_columns_in  := r.state;
-            v.state         := mix_columns_out;
+            -- function MixColumns
+            v.state         := mixColumns (r.state);
             v.machine_state := ADD_ROUND_KEY_S;
        
          when ADD_ROUND_KEY_S =>
-            v.state         := r.state xor r.round_key;
-            if r.number_round = 10 then   
+            -- function AddRoundKey
+            v.state        := addRoundKey (r.state, r.round_key);
+            v.number_round := r.number_round + 1;
+            if r.number_round = 10 then
                v.machine_state := FINAL_STATE_S;
             else
                v.machine_state := KEY_EXPANSION_S;
-               v.number_round  := r.number_round + 1;
             end if;
             
          when FINAL_STATE_S =>
@@ -136,7 +131,8 @@ begin
             done       <= '1';
          
          when others =>
-            v.machine_state := FIRST_STATE_ADD_S;
+            done            <= '0';
+            v.machine_state := IDLE_S;
       end case;
       
       -- Synchronous Reset

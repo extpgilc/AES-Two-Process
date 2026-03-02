@@ -21,10 +21,47 @@ package AesGf2Pkg is
    function multby3          (byte   : slv (7  downto 0)) return slv (7  downto 0);
    function subBox           (byte   : slv (7  downto 0)) return slv (7  downto 0);
    function invSubBox        (byte   : slv (7  downto 0)) return slv (7  downto 0);
+   
+   -- Key expansion functions
+   function keyExpansion (key : slv (127 downto 0); rcon : slv (31 downto 0)) return slv (127 downto 0);
+   
 
 end AesGf2Pkg;
 
 package body AesGf2Pkg is
+
+
+   function keyExpansion (
+      key  : slv (127 downto 0);
+      rcon : slv (31 downto 0)) return slv (127 downto 0) is
+      variable round_key                            : slv (127 downto 0);
+      variable w0, w1, w2, w3, w4, w5, w6, w7, temp : slv (31  downto 0);
+   begin
+      w0 := key (31  downto  0);
+      w1 := key (63  downto 32);
+      w2 := key (95  downto 64);
+      w3 := key (127 downto 96);
+      
+      temp (31 downto 24) := subBox(w3 (23 downto 16));
+      temp (23 downto 16) := subBox(w3 (15 downto  8));
+      temp (15 downto  8) := subBox(w3 (7  downto  0));
+      temp (7  downto  0) := subBox(w3 (31 downto 24));
+      
+      temp := temp xor rcon;
+      
+      w4 := w0 xor temp;
+      w5 := w4 xor w1;
+      w6 := w5 xor w2;
+      w7 := w6 xor w3;
+      
+      round_key (127 downto 96) := w4;
+      round_key (95  downto 64) := w5;
+      round_key (63  downto 32) := w6;
+      round_key (31  downto  0) := w7;
+      
+      return round_key;
+   
+   end function keyExpansion;
 
 
    function mixColumns (
@@ -43,7 +80,7 @@ package body AesGf2Pkg is
       state : slv (127 downto 0)) return slv (127 downto 0) is
       variable output_data : slv (127 downto 0);
    begin
-      for i 0 to 15 loop
+      for i in 0 to 15 loop
          output_data ((i + 1)*8 - 1 downto i*8) := 
             sBox (state((i + 1)*8 - 1 downto i*8));
       end loop;
