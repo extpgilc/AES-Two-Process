@@ -2,8 +2,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library surf;
-use surf.StdRtlPkg.all;
 
 library aes;
 use aes.AesGf2Pkg.all;
@@ -47,8 +45,8 @@ architecture rtl of Encoder is
    constant REG_INIT_C : RegType := (
        number_round  => 0,
        machine_state => IDLE_S,
-       round_key     => key,
-       state         => plaintext);
+       round_key     => (others => '0'),
+       state         => (others => '0'));
       
    
    -- Register interface    
@@ -68,8 +66,10 @@ begin
       
       case (r.machine_state) is
          when IDLE_S =>
-            v               := REG_INIT_C;
+            v.round_key := key;
+            v.state := plaintext;
             v.machine_state := FIRST_STATE_ADD_S;
+            done <= '0';
          
          when FIRST_STATE_ADD_S =>
             -- function AddRoundKey
@@ -103,12 +103,12 @@ begin
        
          when ADD_ROUND_KEY_S =>
             -- function AddRoundKey
-            v.state        := addRoundKey (r.state, r.round_key);
-            v.number_round := r.number_round + 1;
+            v.state := addRoundKey (r.state, r.round_key);
             if r.number_round = NR then
                v.machine_state := FINAL_STATE_S;
             else
                v.machine_state := KEY_EXPANSION_S;
+               v.number_round  := r.number_round + 1;
             end if;
             
          when FINAL_STATE_S =>
@@ -126,7 +126,7 @@ begin
       end if;
    
       -- Update Registers
-      rin <= v;
+      rin   <= v;
    end process comb;
    
    
