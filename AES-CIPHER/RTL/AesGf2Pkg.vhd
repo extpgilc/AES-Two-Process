@@ -4,28 +4,30 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library surf;
-use surf.StdRtlPkg.all;
 
 package AesGf2Pkg is
 
+   subtype slv128 is std_logic_vector (127 downto 0);
+   subtype slv32  is std_logic_vector (31  downto 0);
+   subtype slv8   is std_logic_vector (7   downto 0);
+
    -- Main operation functionns
-   function addRoundKey (state : slv (127 downto 0); key : slv (127 downto 0)) return slv (127 downto 0);
-   function subBytes    (state : slv (127 downto 0)) return slv (127 downto 0);
-   function shiftRows   (state : slv (127 downto 0)) return slv (127 downto 0);
-   function mixColumns  (state : slv (127 downto 0)) return slv (127 downto 0);
+   function addRoundKey (state : std_logic_vector (127 downto 0); key : std_logic_vector (127 downto 0)) return slv128;
+   function subBytes    (state : std_logic_vector (127 downto 0)) return slv128;
+   function shiftRows   (state : std_logic_vector (127 downto 0)) return slv128;
+   function mixColumns  (state : std_logic_vector (127 downto 0)) return slv128;
 
    -- Auxialiary functions
-   function columnCalculator (column : slv (31 downto 0)) return slv (31 downto 0);
-   function multby2          (byte   : slv (7  downto 0)) return slv (7  downto 0);
-   function multby3          (byte   : slv (7  downto 0)) return slv (7  downto 0);
-   function subBox           (byte   : slv (7  downto 0)) return slv (7  downto 0);
-   function invSubBox        (byte   : slv (7  downto 0)) return slv (7  downto 0);
+   function columnCalculator (column : std_logic_vector (31 downto 0)) return slv32;
+   function multby2          (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function multby3          (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function subBox           (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function invSubBox        (byte   : std_logic_vector (7  downto 0)) return  slv8;
    
    -- Key expansion functions
-   function keyExpansion (key : slv (127 downto 0); number_round : integer) return slv (127 downto 0);
+   function keyExpansion (key : std_logic_vector (127 downto 0); number_round : integer) return slv128;
    
-   type rcon_array is array (0 to 10) of slv (31 downto 0);
+   type rcon_array is array (0 to 10) of std_logic_vector (31 downto 0);
 
    constant RCON_C : rcon_array := (
       x"00000000",
@@ -48,21 +50,21 @@ package body AesGf2Pkg is
 
 
    function keyExpansion (
-      key          : slv (127 downto 0);
-      number_round : integer) return slv (127 downto 0) is
-      variable round_key                            : slv (127 downto 0);
-      variable w0, w1, w2, w3, w4, w5, w6, w7, temp : slv (31  downto 0);
+      key          : std_logic_vector (127 downto 0);
+      number_round : integer) return slv128 is
+      variable round_key                            : slv128;
+      variable w0, w1, w2, w3, w4, w5, w6, w7, temp :  slv32;
    begin
-      w0 := key (31  downto  0);
-      w1 := key (63  downto 32);
-      w2 := key (95  downto 64);
-      w3 := key (127 downto 96);
+      w3 := key (31  downto  0);
+      w2 := key (63  downto 32);
+      w1 := key (95  downto 64);
+      w0 := key (127 downto 96);
       
       temp (31 downto 24) := subBox(w3 (23 downto 16));
       temp (23 downto 16) := subBox(w3 (15 downto  8));
       temp (15 downto  8) := subBox(w3 (7  downto  0));
       temp (7  downto  0) := subBox(w3 (31 downto 24));
-      
+            
       temp := temp xor RCON_C (number_round);
       
       w4 := w0 xor temp;
@@ -81,8 +83,8 @@ package body AesGf2Pkg is
 
 
    function mixColumns (
-      state : slv (127 downto 0)) return slv (127 downto 0) is
-      variable output_data : slv (127 downto 0);
+      state : std_logic_vector (127 downto 0)) return slv128 is
+      variable output_data : slv128;
    begin
       output_data (31  downto  0) := columnCalculator (state (31  downto  0));
       output_data (63  downto 32) := columnCalculator (state (63  downto 32));
@@ -93,8 +95,8 @@ package body AesGf2Pkg is
    
 
    function subBytes (
-      state : slv (127 downto 0)) return slv (127 downto 0) is
-      variable output_data : slv (127 downto 0);
+      state : std_logic_vector (127 downto 0)) return slv128 is
+      variable output_data : slv128;
    begin
       for i in 0 to 15 loop
          output_data ((i + 1)*8 - 1 downto i*8) := 
@@ -105,41 +107,47 @@ package body AesGf2Pkg is
    
 
    function shiftRows (
-      state : slv (127 downto 0)) return slv (127 downto 0) is
-      variable output_data : slv (127 downto 0); 
+      state : std_logic_vector (127 downto 0)) return slv128 is
+      variable output_data : slv128; 
    begin
-      output_data (8*16 - 1 downto 8*15) := state (8*12 - 1 downto 8*11);
-      output_data (8*15 - 1 downto 8*14) := state (8*7  - 1 downto  8*6);
-      output_data (8*14 - 1 downto 8*13) := state (8*2  - 1 downto  8*1); 
-      output_data (8*13 - 1 downto 8*12) := state (8*13 - 1 downto 8*12);
-      output_data (8*12 - 1 downto 8*11) := state (8*8  - 1 downto  8*7);
-      output_data (8*11 - 1 downto 8*10) := state (8*3  - 1 downto  8*2); 
-      output_data (8*10 - 1 downto  8*9) := state (8*14 - 1 downto 8*13);
-      output_data (8*9 - 1  downto  8*8) := state (8*9  - 1 downto  8*8);
-      output_data (8*8 - 1  downto  8*7) := state (8*4  - 1 downto  8*3);
-      output_data (8*7 - 1  downto  8*6) := state (8*15 - 1 downto 8*14);
-      output_data (8*6 - 1  downto  8*5) := state (8*10 - 1 downto  8*9);
-      output_data (8*5 - 1  downto  8*4) := state (8*5  - 1 downto  8*4);
-      output_data (8*4 - 1  downto  8*3) := state (8*16 - 1 downto 8*15);
-      output_data (8*3 - 1  downto  8*2) := state (8*11 - 1 downto 8*10);
-      output_data (8*2 - 1  downto  8*1) := state (8*6  - 1 downto  8*5);
-      output_data (8*1 - 1  downto  8*0) := state (8*1  - 1 downto  8*0); 
+      output_data (8*16 - 1 downto 8*15) := state (8*16 - 1 downto 8*15);
+      output_data (8*15 - 1 downto 8*14) := state (8*11 - 1 downto 8*10);
+      output_data (8*14 - 1 downto 8*13) := state (8*6  - 1 downto  8*5); 
+      output_data (8*13 - 1 downto 8*12) := state (8*1  - 1 downto  8*0);
+      
+      output_data (8*12 - 1 downto 8*11) := state (8*12 - 1 downto 8*11);
+      output_data (8*11 - 1 downto 8*10) := state (8*7  - 1 downto  8*6); 
+      output_data (8*10 - 1 downto  8*9) := state (8*2  - 1 downto  8*1);
+      output_data (8*9 - 1  downto  8*8) := state (8*13 - 1 downto 8*12);
+      
+      output_data (8*8 - 1  downto  8*7) := state (8*8  - 1 downto  8*7);
+      output_data (8*7 - 1  downto  8*6) := state (8*3  - 1 downto  8*2);
+      output_data (8*6 - 1  downto  8*5) := state (8*14 - 1 downto 8*13);
+      output_data (8*5 - 1  downto  8*4) := state (8*9  - 1 downto  8*8);
+      
+      output_data (8*4 - 1  downto  8*3) := state (8*4  - 1 downto  8*3);
+      output_data (8*3 - 1  downto  8*2) := state (8*15 - 1 downto 8*14);
+      output_data (8*2 - 1  downto  8*1) := state (8*10 - 1 downto  8*9);
+      output_data (8*1 - 1  downto  8*0) := state (8*5  - 1 downto  8*4); 
+      
       return output_data;
    end function shiftRows;
    
 
    function addRoundKey (
-      state : slv (127 downto 0);
-      key   : slv (127 downto 0)) return slv (127 downto 0) is
+      state : std_logic_vector (127 downto 0);
+      key   : std_logic_vector (127 downto 0)) return slv128 is
+      variable output_data : slv128;
    begin
-      return state xor key;
+      output_data := state xor key;
+      return output_data;
    end function addRoundKey;
    
    
    function columnCalculator (
-      column : slv (31 downto 0)) return slv (31 downto 0) is
-   variable v              : slv (31 downto 0);
-   variable s0, s1, s2, s3 : slv (7 downto 0);
+      column : std_logic_vector (31 downto 0)) return slv32 is
+   variable v              : slv32;
+   variable s0, s1, s2, s3 :  slv8;
    begin
       s0 := column(31 downto 24);
       s1 := column(23 downto 16);
@@ -154,9 +162,9 @@ package body AesGf2Pkg is
    end function columnCalculator;
    
    function multby2 (
-      byte : slv (7 downto 0)) return slv (7 downto 0) is
-      variable shifted_byte    : slv (7 downto 0);
-      variable conditional_xor : slv (7 downto 0);
+      byte : std_logic_vector (7 downto 0)) return slv8 is
+      variable shifted_byte    : slv8;
+      variable conditional_xor : slv8;
    begin
       shifted_byte    := byte(6 downto 0) & "0";
       conditional_xor := "000" & byte(7) & byte(7) & "0" & byte(7) & byte(7);
@@ -164,14 +172,14 @@ package body AesGf2Pkg is
    end function multby2;
    
    function multby3 (
-      byte : slv (7 downto 0)) return slv (7 downto 0) is
+      byte : std_logic_vector (7 downto 0)) return slv8 is
    begin
       return multby2(byte) xor byte;
    end function multby3;
    
 
    function subBox (
-      byte : slv (7 downto 0)) return slv (7 downto 0) is
+      byte : std_logic_vector (7 downto 0)) return slv8 is
    begin
       case byte is
          when x"00" => return x"63";
@@ -435,7 +443,7 @@ package body AesGf2Pkg is
    end function subBox;
 
    function invSubBox(
-      byte : slv(7 downto 0)) return slv (7 downto 0) is
+      byte : std_logic_vector (7 downto 0)) return slv8 is
    begin
       case byte is
          when x"00" => return x"52";

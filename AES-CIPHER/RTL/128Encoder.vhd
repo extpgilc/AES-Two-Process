@@ -12,12 +12,12 @@ entity Encoder is
    generic (
       TPD_G      : time := 1 ns);   -- Simulated propagation delay
    port (
-      clk        : in  sl;
-      srst       : in  sl;
-      key        : in  slv (127 downto 0);
-      plaintext  : in  slv (127 downto 0);
-      ciphertext : out slv (127 downto 0);
-      done       : out sl);
+      clk        : in  std_logic;
+      srst       : in  std_logic;
+      key        : in  std_logic_vector (127 downto 0);
+      plaintext  : in  std_logic_vector (127 downto 0);
+      ciphertext : out std_logic_vector (127 downto 0);
+      done       : out std_logic);
 end entity Encoder;
 
 architecture rtl of Encoder is
@@ -38,8 +38,8 @@ architecture rtl of Encoder is
    type RegType is record
       number_round  : integer;
       machine_state : StateType;
-      round_key     : slv (127 downto 0);
-      state         : slv (127 downto 0);
+      round_key     : std_logic_vector (127 downto 0);
+      state         : std_logic_vector (127 downto 0);
    end record RegType;
    
    
@@ -90,7 +90,7 @@ begin
          when SHIFT_ROWS_S =>
             -- function ShiftRows
             v.state := shiftRows (r.state);
-            if r.number_round = 10 then
+            if r.number_round = NR then
                v.machine_state := ADD_ROUND_KEY_S;
             else 
                v.machine_state := MIX_COLUMNS_S;
@@ -105,7 +105,7 @@ begin
             -- function AddRoundKey
             v.state        := addRoundKey (r.state, r.round_key);
             v.number_round := r.number_round + 1;
-            if r.number_round = 10 then
+            if r.number_round = NR then
                v.machine_state := FINAL_STATE_S;
             else
                v.machine_state := KEY_EXPANSION_S;
