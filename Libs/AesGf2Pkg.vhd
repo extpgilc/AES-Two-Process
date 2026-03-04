@@ -11,21 +11,34 @@ package AesGf2Pkg is
    subtype slv32  is std_logic_vector (31  downto 0);
    subtype slv8   is std_logic_vector (7   downto 0);
 
+   type key_array is array (0 to 10) of slv128;
+
    -- Main operation functionns
-   function addRoundKey (state : std_logic_vector (127 downto 0); key : std_logic_vector (127 downto 0)) return slv128;
-   function subBytes    (state : std_logic_vector (127 downto 0)) return slv128;
-   function shiftRows   (state : std_logic_vector (127 downto 0)) return slv128;
-   function mixColumns  (state : std_logic_vector (127 downto 0)) return slv128;
+   function addRoundKey   (state : std_logic_vector (127 downto 0); key : std_logic_vector (127 downto 0)) return slv128;
+   function subBytes      (state : std_logic_vector (127 downto 0)) return slv128;
+   function invSubBytes   (state : std_logic_vector (127 downto 0)) return slv128;
+   function shiftRows     (state : std_logic_vector (127 downto 0)) return slv128;
+   function invShiftRows  (state : std_logic_vector (127 downto 0)) return slv128;
+   function mixColumns    (state : std_logic_vector (127 downto 0)) return slv128;
+   function invMixColumns (state : std_logic_vector (127 downto 0)) return slv128;
 
    -- Auxialiary functions
-   function columnCalculator (column : std_logic_vector (31 downto 0)) return slv32;
-   function multby2          (byte   : std_logic_vector (7  downto 0)) return  slv8;
-   function multby3          (byte   : std_logic_vector (7  downto 0)) return  slv8;
-   function subBox           (byte   : std_logic_vector (7  downto 0)) return  slv8;
-   function invSubBox        (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function columnCalculator    (column : std_logic_vector (31 downto 0)) return slv32;
+   function invColumnCalculator (column : std_logic_vector (31 downto 0)) return slv32;
+   function multby2             (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function multby3             (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function multby4             (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function multby8             (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function multby9             (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function multbyb             (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function multbyd             (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function multbye             (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function subBox              (byte   : std_logic_vector (7  downto 0)) return  slv8;
+   function invSubBox           (byte   : std_logic_vector (7  downto 0)) return  slv8;
    
    -- Key expansion functions
    function keyExpansion (key : std_logic_vector (127 downto 0); number_round : integer) return slv128;
+   function keyScheduler (key : std_logic_vector (127 downto 0)) return key_array;
    
    type rcon_array is array (0 to 10) of std_logic_vector (31 downto 0);
 
@@ -80,18 +93,53 @@ package body AesGf2Pkg is
       return round_key;
    
    end function keyExpansion;
+   
+   function keyScheduler (
+      key : std_logic_vector (127 downto 0)) return key_array is
+      variable keychain : key_array;
+      variable index    : integer := 1;
+   begin
+      keychain (0) := key;
+      for i in 1 to 10 loop 
+         keychain (i) := keyExpansion(keychain (i - 1), index);
+         index := index + 1;
+      end loop;
+      
+      return keychain;
+   end function keyScheduler;
+   
+   
+   function addRoundKey (
+      state : std_logic_vector (127 downto 0);
+      key   : std_logic_vector (127 downto 0)) return slv128 is
+      variable output_data : slv128;
+   begin
+      output_data := state xor key;
+      return output_data;
+   end function addRoundKey;
 
 
    function mixColumns (
       state : std_logic_vector (127 downto 0)) return slv128 is
       variable output_data : slv128;
    begin
-      output_data (31  downto  0) := columnCalculator (state (31  downto  0));
-      output_data (63  downto 32) := columnCalculator (state (63  downto 32));
-      output_data (95  downto 64) := columnCalculator (state (95  downto 64));
       output_data (127 downto 96) := columnCalculator (state (127 downto 96));
+      output_data (95  downto 64) := columnCalculator (state (95  downto 64));
+      output_data (63  downto 32) := columnCalculator (state (63  downto 32));
+      output_data (31  downto  0) := columnCalculator (state (31  downto  0));
       return output_data;
    end function mixColumns;
+   
+   function invMixColumns (
+      state : std_logic_vector (127 downto 0)) return slv128 is
+      variable output_data : slv128;
+   begin
+      output_data (127 downto 96) := invColumnCalculator (state (127 downto 96));
+      output_data (95  downto 64) := invColumnCalculator (state (95  downto 64));
+      output_data (63  downto 32) := invColumnCalculator (state (63  downto 32));
+      output_data (31  downto  0) := invColumnCalculator (state (31  downto  0));
+      return output_data;
+   end function invMixColumns;
    
 
    function subBytes (
@@ -105,43 +153,71 @@ package body AesGf2Pkg is
       return output_data;
    end function subBytes;
    
+   function invSubBytes (
+      state : std_logic_vector (127 downto 0)) return slv128 is
+      variable output_data : slv128;
+   begin
+      for i in 0 to 15 loop
+         output_data ((i + 1)*8 - 1 downto i*8) := 
+            invSubBox (state((i + 1)*8 - 1 downto i*8));
+      end loop;
+      return output_data;
+   end function invSubBytes;
+   
 
    function shiftRows (
       state : std_logic_vector (127 downto 0)) return slv128 is
       variable output_data : slv128; 
    begin
-      output_data (8*16 - 1 downto 8*15) := state (8*16 - 1 downto 8*15);
-      output_data (8*15 - 1 downto 8*14) := state (8*11 - 1 downto 8*10);
-      output_data (8*14 - 1 downto 8*13) := state (8*6  - 1 downto  8*5); 
-      output_data (8*13 - 1 downto 8*12) := state (8*1  - 1 downto  8*0);
-      
-      output_data (8*12 - 1 downto 8*11) := state (8*12 - 1 downto 8*11);
-      output_data (8*11 - 1 downto 8*10) := state (8*7  - 1 downto  8*6); 
-      output_data (8*10 - 1 downto  8*9) := state (8*2  - 1 downto  8*1);
-      output_data (8*9 - 1  downto  8*8) := state (8*13 - 1 downto 8*12);
-      
-      output_data (8*8 - 1  downto  8*7) := state (8*8  - 1 downto  8*7);
-      output_data (8*7 - 1  downto  8*6) := state (8*3  - 1 downto  8*2);
-      output_data (8*6 - 1  downto  8*5) := state (8*14 - 1 downto 8*13);
-      output_data (8*5 - 1  downto  8*4) := state (8*9  - 1 downto  8*8);
-      
-      output_data (8*4 - 1  downto  8*3) := state (8*4  - 1 downto  8*3);
-      output_data (8*3 - 1  downto  8*2) := state (8*15 - 1 downto 8*14);
-      output_data (8*2 - 1  downto  8*1) := state (8*10 - 1 downto  8*9);
-      output_data (8*1 - 1  downto  8*0) := state (8*5  - 1 downto  8*4); 
-      
+      output_data (127 downto 120) := state (127 downto 120);
+      output_data (119 downto 112) := state (87  downto  80);
+      output_data (111 downto 104) := state (47  downto  40); 
+      output_data (103 downto  96) := state (7   downto   0);
+   
+      output_data (95  downto  88) := state (95  downto  88);
+      output_data (87  downto  80) := state (55  downto  48); 
+      output_data (79  downto  72) := state (15  downto   8);
+      output_data (71  downto  64) := state (103 downto  96);
+   
+      output_data (63  downto  56) := state (63  downto  56);
+      output_data (55  downto  48) := state (23  downto  16);
+      output_data (47  downto  40) := state (111 downto 104);
+      output_data (39  downto  32) := state (71  downto  64);
+   
+      output_data (31  downto  24) := state (31  downto  24);
+      output_data (23  downto  16) := state (119 downto 112);
+      output_data (15  downto   8) := state (79  downto  72);
+      output_data (7   downto   0) := state (39  downto  32); 
+   
       return output_data;
    end function shiftRows;
    
-
-   function addRoundKey (
-      state : std_logic_vector (127 downto 0);
-      key   : std_logic_vector (127 downto 0)) return slv128 is
-      variable output_data : slv128;
+   function invShiftRows (
+      state : std_logic_vector (127 downto 0)) return slv128 is
+      variable output_data : slv128; 
    begin
-      output_data := state xor key;
+      output_data (127 downto 120) := state (127 downto 120);
+      output_data (95  downto  88) := state (95  downto  88);
+      output_data (63  downto  56) := state (63  downto  56);
+      output_data (31  downto  24) := state (31  downto  24);
+      
+      output_data (119 downto 112) := state (23  downto  16);
+      output_data (87  downto  80) := state (119 downto 112);
+      output_data (55  downto  48) := state (87  downto  80);
+      output_data (23  downto  16) := state (55  downto  48);
+      
+      output_data (111 downto 104) := state (47  downto  40);
+      output_data (79  downto  72) := state (15  downto   8);
+      output_data (47  downto  40) := state (111 downto 104);
+      output_data (15  downto   8) := state (79  downto  72); 
+      
+      output_data (103 downto  96) := state (71  downto  64);
+      output_data (71  downto  64) := state (39  downto  32);
+      output_data (39  downto  32) := state (7   downto   0);
+      output_data (7   downto   0) := state (103 downto  96); 
+      
       return output_data;
-   end function addRoundKey;
+   end function invShiftRows;
    
    
    function columnCalculator (
@@ -155,11 +231,31 @@ package body AesGf2Pkg is
       s3 := column(7  downto  0);
    
       v (31 downto 24) := multby2(s0) xor multby3(s1) xor s2 xor s3;
-	  v (23 downto 16) := s0 xor multby2(s1) xor multby3(s2) xor s3;
-	  v (15 downto  8) := s0 xor s1 xor multby2(s2) xor multby3(s3);
-	  v (7  downto  0) := multby3(s0) xor s1 xor s2 xor multby2(s3);
-	  return v;
+      v (23 downto 16) := s0 xor multby2(s1) xor multby3(s2) xor s3;
+      v (15 downto  8) := s0 xor s1 xor multby2(s2) xor multby3(s3);
+      v (7  downto  0) := multby3(s0) xor s1 xor s2 xor multby2(s3);
+      
+      return v;
    end function columnCalculator;
+   
+   function invColumnCalculator (
+      column : std_logic_vector (31 downto 0)) return slv32 is
+   variable v              : slv32;
+   variable s0, s1, s2, s3 :  slv8;
+   begin
+      s0 := column(31 downto 24);
+      s1 := column(23 downto 16);
+      s2 := column(15 downto  8);
+      s3 := column(7  downto  0);
+   
+      v (31 downto 24) := multbye(s0) xor multbyb(s1) xor multbyd(s2) xor multby9(s3);
+      v (23 downto 16) := multby9(s0) xor multbye(s1) xor multbyb(s2) xor multbyd(s3);
+      v (15 downto  8) := multbyd(s0) xor multby9(s1) xor multbye(s2) xor multbyb(s3);
+      v (7  downto  0) := multbyb(s0) xor multbyd(s1) xor multby9(s2) xor multbye(s3);
+      
+      return v;
+   end function invColumnCalculator;
+   
    
    function multby2 (
       byte : std_logic_vector (7 downto 0)) return slv8 is
@@ -176,6 +272,42 @@ package body AesGf2Pkg is
    begin
       return multby2(byte) xor byte;
    end function multby3;
+   
+   function multby4(
+      byte : std_logic_vector (7 downto 0)) return slv8 is
+   begin
+      return multby2(multby2(byte));
+   end function multby4;
+   
+   function multby8(
+      byte : std_logic_vector (7 downto 0)) return slv8 is
+   begin
+      return multby2(multby4(byte));
+   end function multby8;
+   
+   function multby9(
+      byte : std_logic_vector (7 downto 0)) return slv8 is
+   begin
+      return multby8(byte) xor byte;
+   end function multby9;
+   
+   function multbyb(
+      byte : std_logic_vector (7 downto 0)) return slv8 is
+   begin
+      return multby8(byte) xor multby2(byte) xor byte;
+   end function multbyb;
+   
+   function multbyd(
+      byte : std_logic_vector (7 downto 0)) return slv8 is
+   begin
+      return multby8(byte) xor multby4(byte) xor byte;
+   end function multbyd;
+   
+   function multbye(
+      byte : std_logic_vector (7 downto 0)) return slv8 is
+   begin
+      return multby8(byte) xor multby4(byte) xor multby2(byte);
+   end function multbye;
    
 
    function subBox (

@@ -66,8 +66,8 @@ begin
       
       case (r.machine_state) is
          when IDLE_S =>
-            v.round_key := key;
-            v.state := plaintext;
+            v.round_key     := key;
+            v.state         := plaintext;
             v.machine_state := FIRST_STATE_ADD_S;
             done <= '0';
          
@@ -84,7 +84,7 @@ begin
             
          when SUB_BYTES_S =>
             -- function SubBytes
-            v.state := subBytes (r.state);
+            v.state         := subBytes (r.state);
             v.machine_state := SHIFT_ROWS_S;
          
          when SHIFT_ROWS_S =>
