@@ -39,4 +39,7 @@ VHDL_SOURCES = AesTestingWrapper.vhd
 
 CUSTOM_COMPILE_DEPS = pre_compile
 
+# Flag necesaria para mostrar ondas
+SIM_ARGS += --wave=$(SIM_BUILD)/waves.ghw
+
 include $(shell cocotb-config --makefiles)/Makefile.sim
