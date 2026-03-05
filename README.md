@@ -27,7 +27,7 @@ pip install --upgrade pip
 Install the required python packages in the virtual environment.
 
 ´´bash
-python3 -m pip install -r ../pip_requirements.txt
+python3 -m pip install -r pip_requirements.txt
 
 Deactivate the virtual environment with
 
