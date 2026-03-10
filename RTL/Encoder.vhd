@@ -74,6 +74,8 @@ begin
             -- function KeyExpansion
             if NR = 14 then
                v.keychain := keyScheduler256 (key);
+            elsif NR = 12 then
+               v.keychain := keyScheduler192 (key);
             elsif NR = 10 then
                v.keychain := keyScheduler128 (key);
             else
