@@ -12,9 +12,8 @@ package AesGf2Pkg is
    subtype slv32  is std_logic_vector (31  downto 0);
    subtype slv8   is std_logic_vector (7   downto 0);
 
-   type key_array128   is array (0 to 10) of slv128;
-   type key_array256   is array (0 to 14) of slv128;
-   type key_holder256  is array (0 to  7) of slv256;
+   type key_array     is array (0 to 14) of slv128;
+   type key_holder256 is array (0 to  7) of slv256;
 
    -- Main operation functionns
    function addRoundKey   (state : std_logic_vector (127 downto 0); key : std_logic_vector (127 downto 0)) return slv128;
@@ -41,10 +40,10 @@ package AesGf2Pkg is
    
    -- Key expansion functions
    function keyExpansion128 (key : std_logic_vector (127 downto 0); number_round : integer) return slv128;
-   function keyScheduler128 (key : std_logic_vector (127 downto 0)) return key_array128;
+   function keyScheduler128 (key : std_logic_vector (127 downto 0)) return key_array;
    
    function keyExpansion256 (key : std_logic_vector (255 downto 0); number_round : integer) return slv256;
-   function keyScheduler256 (key : std_logic_vector (255 downto 0)) return key_array256;
+   function keyScheduler256 (key : std_logic_vector (255 downto 0)) return key_array;
    
    type rcon_array is array (0 to 10) of std_logic_vector (31 downto 0);
 
@@ -101,8 +100,8 @@ package body AesGf2Pkg is
    end function keyExpansion128;
    
    function keyScheduler128 (
-      key : std_logic_vector (127 downto 0)) return key_array128 is
-      variable keychain : key_array128;
+      key : std_logic_vector (127 downto 0)) return key_array is
+      variable keychain : key_array;
       variable index    : integer := 1;
    begin
       keychain (0) := key;
@@ -167,8 +166,8 @@ package body AesGf2Pkg is
    
    
    function keyScheduler256 (
-      key : std_logic_vector (255 downto 0)) return key_array256 is
-      variable keychain  : key_array256;
+      key : std_logic_vector (255 downto 0)) return key_array is
+      variable keychain  : key_array;
       variable keyholder : key_holder256;
       variable index     : integer := 1;
    begin
