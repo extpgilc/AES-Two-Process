@@ -9,70 +9,130 @@ use aes.AesGf2Pkg.all;
 entity TestWrapper is
    generic (
       TPD_G      : time := 1 ns);   -- Simulated propagation delay
+      
    port (
-      clk         : in  std_logic;
-      rst         : in  std_logic;
-      key         : in  std_logic_vector (127 downto 0);
-      plaintext   : in  std_logic_vector (127 downto 0);
-      ciphertext  : out std_logic_vector (127 downto 0);
-      decodedtext : out std_logic_vector (127 downto 0);
-      done        : out std_logic);
+      clk             : in  std_logic;
+      rst_128         : in  std_logic;
+      rst_256         : in  std_logic;
+      key_128         : in  std_logic_vector (127 downto 0);
+      key_256         : in  std_logic_vector (255 downto 0);
+      plaintext       : in  std_logic_vector (127 downto 0);
+      ciphertext_128  : out std_logic_vector (127 downto 0);
+      decodedtext_128 : out std_logic_vector (127 downto 0);
+      ciphertext_256  : out std_logic_vector (127 downto 0);
+      decodedtext_256 : out std_logic_vector (127 downto 0);
+      done_128        : out std_logic;
+      done_256        : out std_logic);
 end entity TestWrapper;
 
 
 architecture rtl of TestWrapper is
 
-   signal srst_enc : std_logic;
-   signal srst_dec : std_logic;
-   signal done_enc : std_logic := '0';
-   signal done_dec : std_logic := '0';
+   -- Signals for aes 128
+   signal srst_enc_128 : std_logic;
+   signal srst_dec_128 : std_logic;
+   signal done_enc_128 : std_logic := '0';
+   signal done_dec_128 : std_logic := '0';
    
-   signal encoder_input  : std_logic_vector (127 downto 0);
-   signal encoder_output : std_logic_vector (127 downto 0);
-   signal decoder_output : std_logic_vector (127 downto 0);
+   signal encoder_input_128  : std_logic_vector (127 downto 0);
+   signal encoder_output_128 : std_logic_vector (127 downto 0);
+   signal decoder_output_128 : std_logic_vector (127 downto 0);
+   
+   -- Signals for aes 256
+   signal srst_enc_256 : std_logic;
+   signal srst_dec_256 : std_logic;
+   signal done_enc_256 : std_logic := '0';
+   signal done_dec_256 : std_logic := '0';
+   
+   signal encoder_input_256  : std_logic_vector (127 downto 0);
+   signal encoder_output_256 : std_logic_vector (127 downto 0);
+   signal decoder_output_256 : std_logic_vector (127 downto 0);
 
 begin
 
-   -- Combinational signal assignation
-   encoder_input <= plaintext;
-   ciphertext  <= encoder_output;
-   decodedtext <= decoder_output;
+   -- Combinational signal assignation 128
+   encoder_input_128 <= plaintext;
+   ciphertext_128  <= encoder_output_128;
+   decodedtext_128 <= decoder_output_128;
    
-   srst_enc <= rst;
-   srst_dec <= '0' when done_enc = '1' else '1';
+   srst_enc_128 <= rst_128;
+   srst_dec_128 <= '0' when done_enc_128 = '1' else '1';
    
-   done <= done_dec;
+   done_128 <= done_dec_128;
+  
+   -- Combinational signal assignation 256   
+   encoder_input_256 <= plaintext;
+   ciphertext_256  <= encoder_output_256;
+   decodedtext_256 <= decoder_output_256;
+   
+   srst_enc_256 <= rst_256;
+   srst_dec_256 <= '0' when done_enc_256 = '1' else '1';
+   
+   done_256 <= done_dec_256;
+   
 
    ------------------------------------------------------------------------------------------------
    -- Encoder entity
    ------------------------------------------------------------------------------------------------
-   encoder_inst : entity aes.Encoder
+   encoder_inst_256 : entity aes.Encoder
       generic map (
-         TPD_G => TPD_G 
+         TPD_G => TPD_G,
+         NR    => 14,
+         NK    => 8 
       )
       port map (
          clk        => clk,
-         srst       => srst_enc,
-         key        => key,
-         plaintext  => encoder_input,
-         ciphertext => encoder_output,
-         done       => done_enc);
+         srst       => srst_enc_256,
+         key        => key_256,
+         plaintext  => encoder_input_256,
+         ciphertext => encoder_output_256,
+         done       => done_enc_256);
+      
+   encoder_inst_128 : entity aes.Encoder
+      generic map (
+         TPD_G => TPD_G,
+         NR    => 10,
+         NK    => 4 
+      )
+      port map (
+         clk        => clk,
+         srst       => srst_enc_128,
+         key        => key_128,
+         plaintext  => encoder_input_128,
+         ciphertext => encoder_output_128,
+         done       => done_enc_128);
          
          
    ------------------------------------------------------------------------------------------------
    -- Decoder entity
    ------------------------------------------------------------------------------------------------
-   decoder_inst : entity aes.Decoder
+   decoder_inst_256 : entity aes.Decoder
       generic map (
-         TPD_G => TPD_G 
+         TPD_G => TPD_G,
+         NR    => 14,
+         NK    => 8  
       )
       port map (
          clk        => clk,
-         srst       => srst_dec,
-         key        => key,
-         ciphertext => encoder_output,
-         plaintext  => decoder_output,
-         done       => done_dec);
+         srst       => srst_dec_256,
+         key        => key_256,
+         ciphertext => encoder_output_256,
+         plaintext  => decoder_output_256,
+         done       => done_dec_256);
+         
+   decoder_inst : entity aes.Decoder
+      generic map (
+         TPD_G => TPD_G,
+         NR    => 10,
+         NK    => 4  
+      )
+      port map (
+         clk        => clk,
+         srst       => srst_dec_128,
+         key        => key_128,
+         ciphertext => encoder_output_128,
+         plaintext  => decoder_output_128,
+         done       => done_dec_128);
          
          
 end architecture rtl;

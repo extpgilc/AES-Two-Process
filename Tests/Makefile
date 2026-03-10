@@ -24,8 +24,8 @@ MODULE = test_aes
 
 # Rutas a tus fuentes
 AES_PKG = ../RTL/AesGf2Pkg.vhd
-AES_ENC = ../RTL/128Encoder.vhd
-AES_DEC = ../RTL/128Decoder.vhd
+AES_ENC = ../RTL/Encoder.vhd
+AES_DEC = ../RTL/Decoder.vhd
 
 # GHDL necesita compilar la librería aes ANTES que Cocotb
 pre_compile:
