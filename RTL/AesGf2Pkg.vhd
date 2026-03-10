@@ -7,11 +7,14 @@ use ieee.numeric_std.all;
 
 package AesGf2Pkg is
 
+   subtype slv256 is std_logic_vector (255 downto 0);
    subtype slv128 is std_logic_vector (127 downto 0);
    subtype slv32  is std_logic_vector (31  downto 0);
    subtype slv8   is std_logic_vector (7   downto 0);
 
-   type key_array is array (0 to 10) of slv128;
+   type key_array128   is array (0 to 10) of slv128;
+   type key_array256   is array (0 to 14) of slv128;
+   type key_holder256  is array (0 to  7) of slv256;
 
    -- Main operation functionns
    function addRoundKey   (state : std_logic_vector (127 downto 0); key : std_logic_vector (127 downto 0)) return slv128;
@@ -37,8 +40,11 @@ package AesGf2Pkg is
    function invSubBox           (byte   : std_logic_vector (7  downto 0)) return  slv8;
    
    -- Key expansion functions
-   function keyExpansion (key : std_logic_vector (127 downto 0); number_round : integer) return slv128;
-   function keyScheduler (key : std_logic_vector (127 downto 0)) return key_array;
+   function keyExpansion128 (key : std_logic_vector (127 downto 0); number_round : integer) return slv128;
+   function keyScheduler128 (key : std_logic_vector (127 downto 0)) return key_array128;
+   
+   function keyExpansion256 (key : std_logic_vector (255 downto 0); number_round : integer) return slv256;
+   function keyScheduler256 (key : std_logic_vector (255 downto 0)) return key_array256;
    
    type rcon_array is array (0 to 10) of std_logic_vector (31 downto 0);
 
@@ -62,7 +68,7 @@ end AesGf2Pkg;
 package body AesGf2Pkg is
 
 
-   function keyExpansion (
+   function keyExpansion128 (
       key          : std_logic_vector (127 downto 0);
       number_round : integer) return slv128 is
       variable round_key                            : slv128;
@@ -92,21 +98,104 @@ package body AesGf2Pkg is
       
       return round_key;
    
-   end function keyExpansion;
+   end function keyExpansion128;
    
-   function keyScheduler (
-      key : std_logic_vector (127 downto 0)) return key_array is
-      variable keychain : key_array;
+   function keyScheduler128 (
+      key : std_logic_vector (127 downto 0)) return key_array128 is
+      variable keychain : key_array128;
       variable index    : integer := 1;
    begin
       keychain (0) := key;
       for i in 1 to 10 loop 
-         keychain (i) := keyExpansion(keychain (i - 1), index);
+         keychain (i) := keyExpansion128(keychain (i - 1), index);
          index := index + 1;
       end loop;
       
       return keychain;
-   end function keyScheduler;
+   end function keyScheduler128;
+   
+   function keyExpansion256 (
+      key          : std_logic_vector (255 downto 0);
+      number_round : integer) return slv256 is
+      variable round_key                                   : slv256;
+      variable w0, w1, w2, w3, w4, w5, w6, w7, temp        :  slv32;
+      variable w8, w9, w10, w11, w12, w13, w14, w15, temp2 :  slv32;
+   begin
+      w7 := key (31  downto   0);
+      w6 := key (63  downto  32);
+      w5 := key (95  downto  64);
+      w4 := key (127 downto  96);
+      w3 := key (159 downto 128);
+      w2 := key (191 downto 160);
+      w1 := key (223 downto 192);
+      w0 := key (255 downto 224);
+      
+      temp (31 downto 24) := subBox(w7 (23 downto 16));
+      temp (23 downto 16) := subBox(w7 (15 downto  8));
+      temp (15 downto  8) := subBox(w7 (7  downto  0));
+      temp (7  downto  0) := subBox(w7 (31 downto 24));
+            
+      temp := temp xor RCON_C (number_round);
+      
+      w8  := w0  xor temp;
+      w9  := w8  xor w1;
+      w10 := w9  xor w2;
+      w11 := w10 xor w3;
+      
+      temp2 (31 downto 24) := subBox(w11 (31 downto 24));
+      temp2 (23 downto 16) := subBox(w11 (23 downto 16));
+      temp2 (15 downto  8) := subBox(w11 (15 downto  8));
+      temp2 (7  downto  0) := subBox(w11 (7  downto  0));
+     
+      w12 := w4  xor temp2;
+      w13 := w12 xor w5;
+      w14 := w13 xor w6;
+      w15 := w14 xor w7;
+      
+      round_key (255 downto 224) := w8;
+      round_key (223 downto 192) := w9;
+      round_key (191 downto 160) := w10;
+      round_key (159 downto 128) := w11;
+      round_key (127 downto  96) := w12;
+      round_key (95  downto  64) := w13;
+      round_key (63  downto  32) := w14;
+      round_key (31  downto   0) := w15;
+      
+      return round_key;
+   
+   end function keyExpansion256;
+   
+   
+   function keyScheduler256 (
+      key : std_logic_vector (255 downto 0)) return key_array256 is
+      variable keychain  : key_array256;
+      variable keyholder : key_holder256;
+      variable index     : integer := 1;
+   begin
+      keyholder(0) := key;
+      for i in 1 to 7 loop 
+         keyholder(index) := keyExpansion256(keyholder(index - 1), index);
+         index := index + 1;
+      end loop;
+      
+      keychain(0)  := keyholder(0) (255 downto 128); 
+      keychain(1)  := keyholder(0) (127 downto   0);
+      keychain(2)  := keyholder(1) (255 downto 128);
+      keychain(3)  := keyholder(1) (127 downto   0);
+      keychain(4)  := keyholder(2) (255 downto 128);
+      keychain(5)  := keyholder(2) (127 downto   0);
+      keychain(6)  := keyholder(3) (255 downto 128);
+      keychain(7)  := keyholder(3) (127 downto   0);
+      keychain(8)  := keyholder(4) (255 downto 128);
+      keychain(9)  := keyholder(4) (127 downto   0);
+      keychain(10) := keyholder(5) (255 downto 128);
+      keychain(11) := keyholder(5) (127 downto   0);
+      keychain(12) := keyholder(6) (255 downto 128);
+      keychain(13) := keyholder(6) (127 downto   0);
+      keychain(14) := keyholder(7) (255 downto 128);
+      
+      return keychain;
+   end function keyScheduler256;
    
    
    function addRoundKey (
