@@ -6,10 +6,9 @@ use ieee.numeric_std.all;
 library aes;
 use aes.AesGf2Pkg.all;
 
-entity Decoder is
+entity Decipher is
    generic (
       TPD_G      : time := 1 ns;  -- Simulated propagation delay
-      NR         : integer;       -- Number of rounds
       NK         : integer);      -- Number of words in cipher key
    port (
       clk        : in  std_logic;
@@ -18,9 +17,12 @@ entity Decoder is
       ciphertext : in  std_logic_vector (127 downto 0);
       plaintext  : out std_logic_vector (127 downto 0);
       done       : out std_logic);
-end entity Decoder;
+end entity Decipher;
 
-architecture rtl of Decoder is
+architecture rtl of Decipher is
+
+   -- Constant definition for number of rounds (different for key size)
+   constant NR : integer := assignRounds(NK);
     
    -- Types
    type StateType is (

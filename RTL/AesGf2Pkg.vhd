@@ -40,6 +40,9 @@ package AesGf2Pkg is
    function subBox              (byte   : std_logic_vector (7  downto 0)) return  slv8;
    function invSubBox           (byte   : std_logic_vector (7  downto 0)) return  slv8;
    
+   -- Number round assignation
+   function assignRounds (nk : integer) return integer;
+   
    -- Key expansion functions
    function keyExpansion128 (key : std_logic_vector (127 downto 0); number_round : integer) return slv128;
    function keyScheduler128 (key : std_logic_vector (127 downto 0)) return key_array;
@@ -70,6 +73,16 @@ package AesGf2Pkg is
 end AesGf2Pkg;
 
 package body AesGf2Pkg is
+
+   function assignRounds (nk : integer) return integer is
+   begin
+      case nk is
+         when 4 => return 10;
+         when 6 => return 12;
+         when 8 => return 14;
+         when others => return 0;
+      end case;
+   end function;
 
 
    function keyExpansion128 (
