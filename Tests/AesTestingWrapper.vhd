@@ -99,10 +99,9 @@ begin
    ------------------------------------------------------------------------------------------------
    -- Encoder entity
    ------------------------------------------------------------------------------------------------
-   encoder_inst_256 : entity aes.Encoder
+   encoder_inst_256 : entity aes.Cipher
       generic map (
          TPD_G => TPD_G,
-         NR    => 14,
          NK    => 8 
       )
       port map (
@@ -113,10 +112,9 @@ begin
          ciphertext => encoder_output_256,
          done       => done_enc_256);
          
-   encoder_inst_192 : entity aes.Encoder
+   encoder_inst_192 : entity aes.Cipher
       generic map (
          TPD_G => TPD_G,
-         NR    => 12,
          NK    => 6 
       )
       port map (
@@ -127,10 +125,9 @@ begin
          ciphertext => encoder_output_192,
          done       => done_enc_192);
       
-   encoder_inst_128 : entity aes.Encoder
+   encoder_inst_128 : entity aes.Cipher
       generic map (
          TPD_G => TPD_G,
-         NR    => 10,
          NK    => 4 
       )
       port map (
@@ -145,10 +142,9 @@ begin
    ------------------------------------------------------------------------------------------------
    -- Decoder entity
    ------------------------------------------------------------------------------------------------
-   decoder_inst_256 : entity aes.Decoder
+   decoder_inst_256 : entity aes.Decipher
       generic map (
          TPD_G => TPD_G,
-         NR    => 14,
          NK    => 8  
       )
       port map (
@@ -159,10 +155,9 @@ begin
          plaintext  => decoder_output_256,
          done       => done_dec_256);
          
-   decoder_inst_192 : entity aes.Decoder
+   decoder_inst_192 : entity aes.Decipher
       generic map (
          TPD_G => TPD_G,
-         NR    => 12,
          NK    => 6  
       )
       port map (
@@ -173,10 +168,9 @@ begin
          plaintext  => decoder_output_192,
          done       => done_dec_192);
          
-   decoder_inst_128 : entity aes.Decoder
+   decoder_inst_128 : entity aes.Decipher
       generic map (
          TPD_G => TPD_G,
-         NR    => 10,
          NK    => 4  
       )
       port map (

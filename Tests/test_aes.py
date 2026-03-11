@@ -56,42 +56,42 @@ async def run_one_iteration(dut, key_128_int, key_192_int, key_256_int, plaintex
     decoded_128_int = int(dut.decodedtext_128.value)
     
     cocotb.log.info(f"[{iteration}] CIPHERTEXT 128 = {to_hex128(cipher_128_int)}")
-    cocotb.log.info(f"[{iteration}] DECODED 128    = {to_hex128(decoded_128_int)}")
+    cocotb.log.info(f"[{iteration}] DECIPHERED 128 = {to_hex128(decoded_128_int)}")
     
     # 5.2) Loggear resultados aes 192
     cipher_192_int = int(dut.ciphertext_192.value)
     decoded_192_int = int(dut.decodedtext_192.value)
     
     cocotb.log.info(f"[{iteration}] CIPHERTEXT 192 = {to_hex128(cipher_192_int)}")
-    cocotb.log.info(f"[{iteration}] DECODED 192    = {to_hex128(decoded_192_int)}")
+    cocotb.log.info(f"[{iteration}] DECIPHERED 192 = {to_hex128(decoded_192_int)}")
     
     # 5.3) Loggear resultados aes 256
     cipher_256_int = int(dut.ciphertext_256.value)
     decoded_256_int = int(dut.decodedtext_256.value)
 
     cocotb.log.info(f"[{iteration}] CIPHERTEXT 256 = {to_hex128(cipher_256_int)}")
-    cocotb.log.info(f"[{iteration}] DECODED 256    = {to_hex128(decoded_256_int)}")
+    cocotb.log.info(f"[{iteration}] DECIPHERED 256 = {to_hex128(decoded_256_int)}")
 
     # 6.1) Verificación aes 128
     if decoded_128_int != plaintext_int:
         raise AssertionError(
-            f"Iteration {iteration}: decoded != plaintext for key size 128"
+            f"Iteration {iteration}: deciphered != plaintext for key size 128"
         )
 
     # 6.2) Verificación aes 192
     if decoded_192_int != plaintext_int:
         raise AssertionError(
-            f"Iteration {iteration}: decoded != plaintext for key size 192"
+            f"Iteration {iteration}: deciphered != plaintext for key size 192"
         )
 
     # 6.3) Verificación aes 256
     if decoded_256_int != plaintext_int:
         raise AssertionError(
-            f"Iteration {iteration}: decoded != plaintext for key size 256"
+            f"Iteration {iteration}: deciphered != plaintext for key size 256"
         )
 
     # 7) Final message
-    cocotb.log.info(f"[{iteration}] RESULT OK (all 3 decoded outputs == plaintext)")
+    cocotb.log.info(f"[{iteration}] RESULT OK (all 3 deciphered outputs == plaintext)")
 
 
 @cocotb.test()
