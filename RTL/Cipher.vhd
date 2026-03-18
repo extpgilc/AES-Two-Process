@@ -8,7 +8,7 @@ use aes.AesGf2Pkg.all;
 
 entity Cipher is
    generic (
-      TPD_G      : time := 1 ns;   -- Simulated propagation delay
+      -- TPD_G      : time := 1 ns;   -- Simulated propagation delay
       NK         : integer);       -- Number of words in cipher key
    port (
       clk        : in  std_logic;
@@ -16,6 +16,7 @@ entity Cipher is
       key        : in  std_logic_vector (NK * 32 - 1 downto 0);
       plaintext  : in  std_logic_vector (127 downto 0);
       ciphertext : out std_logic_vector (127 downto 0);
+      start      : in  std_logic;
       done       : out std_logic);
 end entity Cipher;
 
@@ -68,8 +69,12 @@ begin
       
       case (r.machine_state) is
          when IDLE_S =>
-            v.state         := plaintext;
-            v.machine_state := KEY_SCHEDULE_S;
+            if start = '1' then
+               v.state         := plaintext;
+               v.machine_state := KEY_SCHEDULE_S;
+            else
+               v.machine_state := IDLE_S;
+            end if;
             done            <= '0';
          
          when KEY_SCHEDULE_S =>
@@ -144,7 +149,7 @@ begin
    seq : process (clk)
    begin
       if rising_edge (clk) then
-         r <= rin after TPD_G;
+         r <= rin; -- after TPD_G;
       end if;
    end process seq;
 
