@@ -8,7 +8,6 @@ use aes.AesGf2Pkg.all;
 
 entity Decipher is
    generic (
-      TPD_G      : time := 1 ns;  -- Simulated propagation delay
       NK         : integer);      -- Number of words in cipher key
    port (
       clk        : in  std_logic;
@@ -62,19 +61,15 @@ begin
    ------------------------------------------------------------------------------------------------
    -- Combinational logic
    ------------------------------------------------------------------------------------------------
-   comb : process (r, srst, key, ciphertext)
+   comb : process (r, srst, start, key, ciphertext)
       variable v: RegType;
    begin
       v := r;
       
       case (r.machine_state) is
          when IDLE_S =>
-            if start = '1' then
-               v.state         := ciphertext;
-               v.machine_state := KEY_SCHEDULE_S;
-            else
-               v.machine_state := IDLE_S;
-            end if;
+            v.state         := ciphertext;
+            v.machine_state := KEY_SCHEDULE_S;
             done            <= '0';
          
          when KEY_SCHEDULE_S =>
@@ -125,7 +120,7 @@ begin
       end case;
       
       -- Synchronous Reset
-      if (srst = '1') then
+      if (srst = '1' or start = '0') then
          v := REG_INIT_C;
       end if;
    
@@ -140,7 +135,7 @@ begin
    seq : process (clk)
    begin
       if rising_edge (clk) then
-         r <= rin; -- after TPD_G;
+         r <= rin;
       end if;
    end process seq;
    
