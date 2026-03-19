@@ -15,10 +15,10 @@ async def run_one_iteration(dut, key_128_int, key_192_int, key_256_int, plaintex
 
     cocotb.log.info(f"\n========== ITERACIÓN {iteration} ==========")
 
-    # 1) Reset alto
-    dut.rst_128.value = 1
-    dut.rst_192.value = 1
-    dut.rst_256.value = 1
+    # 1) Start a 0
+    dut.start_enc_128.value = 0
+    dut.start_enc_192.value = 0
+    dut.start_enc_256.value = 0
     await RisingEdge(dut.clk)
 
     # 2) Cargar entradas
@@ -33,10 +33,10 @@ async def run_one_iteration(dut, key_128_int, key_192_int, key_256_int, plaintex
     # cocotb.log.info(f"[{iteration}] KEY 256    = {to_hex128(key_256_int)}")
     cocotb.log.info(f"[{iteration}] PLAINTEXT      = {to_hex128(plaintext_int)}")
 
-    # 3) Quitar reset
-    dut.rst_128.value = 0
-    dut.rst_192.value = 0
-    dut.rst_256.value = 0
+    # 3) Permitir start
+    dut.start_enc_128.value = 1
+    dut.start_enc_192.value = 1
+    dut.start_enc_256.value = 1
     await RisingEdge(dut.clk)
 
     # 4.1) Esperar done_128 = '1'
@@ -99,6 +99,9 @@ async def aes_encrypt_decrypt_test(dut):
     """Test completo: 4 ejemplos con una key para cada longitud de clave y 4 plaintext distintos."""
 
     cocotb.log.info("=== INICIO TEST AES ===")
+    
+    # Reset a '0'
+    dut.srst.value = 0
 
     # Crear reloj (10 ns)
     cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
