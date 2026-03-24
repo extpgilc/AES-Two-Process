@@ -16,6 +16,7 @@ entity Decipher is
       ciphertext : in  std_logic_vector (127 downto 0);
       plaintext  : out std_logic_vector (127 downto 0);
       start      : in  std_logic;
+      clear      : in  std_logic;
       done       : out std_logic);
 end entity Decipher;
 
@@ -61,16 +62,18 @@ begin
    ------------------------------------------------------------------------------------------------
    -- Combinational logic
    ------------------------------------------------------------------------------------------------
-   comb : process (r, srst, start, key, ciphertext)
+   comb : process (r, srst, start, clear, key, ciphertext)
       variable v: RegType;
    begin
       v := r;
       
       case (r.machine_state) is
          when IDLE_S =>
-            v.state         := ciphertext;
-            v.machine_state := KEY_SCHEDULE_S;
             done            <= '0';
+            if start = '1' then
+               v.state         := ciphertext;
+               v.machine_state := KEY_SCHEDULE_S;
+            end if;
          
          when KEY_SCHEDULE_S =>
             -- function KeyExpansion
@@ -114,13 +117,16 @@ begin
          when FINAL_STATE_S =>
             plaintext <= r.state;
             done      <= '1';
+            if clear = '1' then
+               v := REG_INIT_C;
+            end if;
       
          when others =>
             v.machine_state := IDLE_S;
       end case;
       
       -- Synchronous Reset
-      if (srst = '1' or start = '0') then
+      if srst = '1' then
          v := REG_INIT_C;
       end if;
    
