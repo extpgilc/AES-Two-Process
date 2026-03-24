@@ -6,89 +6,50 @@ library aes;
 use aes.AesGf2Pkg.all;
 
 
-entity TestWrapper is
-   --   generic (
-   --   TPD_G      : time := 1 ns);   -- Simulated propagation delay
-      
+entity TestWrapper is    
    port (
       clk             : in  std_logic;
       srst            : in  std_logic;
-      start_enc_128   : in  std_logic;
-      start_enc_192   : in  std_logic;
-      start_enc_256   : in  std_logic;
       key_128         : in  std_logic_vector (127 downto 0);
       key_192         : in  std_logic_vector (191 downto 0);
       key_256         : in  std_logic_vector (255 downto 0);
-      plaintext       : in  std_logic_vector (127 downto 0);
+      input_enc       : in  std_logic_vector (127 downto 0);
+      input_dec_128   : in  std_logic_vector (127 downto 0);
+      input_dec_192   : in  std_logic_vector (127 downto 0);
+      input_dec_256   : in  std_logic_vector (127 downto 0);
       ciphertext_128  : out std_logic_vector (127 downto 0);
-      decodedtext_128 : out std_logic_vector (127 downto 0);
+      plaintext_128   : out std_logic_vector (127 downto 0);
       ciphertext_192  : out std_logic_vector (127 downto 0);
-      decodedtext_192 : out std_logic_vector (127 downto 0);
+      plaintext_192   : out std_logic_vector (127 downto 0);
       ciphertext_256  : out std_logic_vector (127 downto 0);
-      decodedtext_256 : out std_logic_vector (127 downto 0);
-      done_128        : out std_logic;
-      done_192        : out std_logic;
-      done_256        : out std_logic);
+      plaintext_256   : out std_logic_vector (127 downto 0);
+      start_enc_128   : in  std_logic;
+      start_dec_128   : in  std_logic;
+      start_enc_192   : in  std_logic;
+      start_dec_192   : in  std_logic;
+      start_enc_256   : in  std_logic;
+      start_dec_256   : in  std_logic;
+      clear_enc_128   : in  std_logic;
+      clear_dec_128   : in  std_logic;
+      clear_enc_192   : in  std_logic;
+      clear_dec_192   : in  std_logic;
+      clear_enc_256   : in  std_logic;
+      clear_dec_256   : in  std_logic;
+      done_enc_128    : out std_logic;
+      done_dec_128    : out std_logic;
+      done_enc_192    : out std_logic;
+      done_dec_192    : out std_logic;
+      done_enc_256    : out std_logic;
+      done_dec_256    : out std_logic);
 end entity TestWrapper;
 
 
 architecture rtl of TestWrapper is
 
-   -- Signals for aes 128
-   signal start_dec_128 : std_logic;
-   signal done_enc_128  : std_logic := '0';
-   signal done_dec_128  : std_logic := '0';
-   
-   signal encoder_input_128  : std_logic_vector (127 downto 0);
-   signal encoder_output_128 : std_logic_vector (127 downto 0);
-   signal decoder_output_128 : std_logic_vector (127 downto 0);
-   
-   -- Signals for aes 192
-   signal start_dec_192 : std_logic;
-   signal done_enc_192  : std_logic := '0';
-   signal done_dec_192  : std_logic := '0';
-   
-   signal encoder_input_192  : std_logic_vector (127 downto 0);
-   signal encoder_output_192 : std_logic_vector (127 downto 0);
-   signal decoder_output_192 : std_logic_vector (127 downto 0);
-   
-   -- Signals for aes 256
-   signal start_dec_256 : std_logic;
-   signal done_enc_256  : std_logic := '0';
-   signal done_dec_256  : std_logic := '0';
-   
-   signal encoder_input_256  : std_logic_vector (127 downto 0);
-   signal encoder_output_256 : std_logic_vector (127 downto 0);
-   signal decoder_output_256 : std_logic_vector (127 downto 0);
 
+	
 begin
 
-   -- Combinational signal assignation 128
-   encoder_input_128 <= plaintext;
-   ciphertext_128    <= encoder_output_128;
-   decodedtext_128   <= decoder_output_128;
-   
-   start_dec_128 <= '1' when done_enc_128 = '1' else '0';
-   
-   done_128 <= done_dec_128;
-   
-   -- Combinational signal assignation 192
-   encoder_input_192 <= plaintext;
-   ciphertext_192    <= encoder_output_192;
-   decodedtext_192   <= decoder_output_192;
-   
-   start_dec_192 <= '1' when done_enc_192 = '1' else '0';
-   
-   done_192 <= done_dec_192;
-  
-   -- Combinational signal assignation 256   
-   encoder_input_256 <= plaintext;
-   ciphertext_256  <= encoder_output_256;
-   decodedtext_256 <= decoder_output_256;
-   
-   start_dec_256 <= '1' when done_enc_256 = '1' else '0';
-   
-   done_256 <= done_dec_256;
    
 
    ------------------------------------------------------------------------------------------------
@@ -103,9 +64,10 @@ begin
          clk        => clk,
          srst       => srst,
          key        => key_256,
-         plaintext  => encoder_input_256,
-         ciphertext => encoder_output_256,
+         plaintext  => input_enc,
+         ciphertext => ciphertext_256,
          start      => start_enc_256,
+         clear      => clear_enc_256,
          done       => done_enc_256);
          
    encoder_inst_192 : entity aes.Cipher
@@ -117,9 +79,10 @@ begin
          clk        => clk,
          srst       => srst,
          key        => key_192,
-         plaintext  => encoder_input_192,
-         ciphertext => encoder_output_192,
+         plaintext  => input_enc,
+         ciphertext => ciphertext_192,
          start      => start_enc_192,
+         clear      => clear_enc_192,
          done       => done_enc_192);
       
    encoder_inst_128 : entity aes.Cipher
@@ -131,9 +94,10 @@ begin
          clk        => clk,
          srst       => srst,
          key        => key_128,
-         plaintext  => encoder_input_128,
-         ciphertext => encoder_output_128,
+         plaintext  => input_enc,
+         ciphertext => ciphertext_128,
          start      => start_enc_128,
+         clear      => clear_enc_128,
          done       => done_enc_128);
          
          
@@ -149,9 +113,10 @@ begin
          clk        => clk,
          srst       => srst,
          key        => key_256,
-         ciphertext => encoder_output_256,
-         plaintext  => decoder_output_256,
+         ciphertext => input_dec_256,
+         plaintext  => plaintext_256,
          start      => start_dec_256,
+         clear      => clear_dec_256,
          done       => done_dec_256);
          
    decoder_inst_192 : entity aes.Decipher
@@ -163,9 +128,10 @@ begin
          clk        => clk,
          srst       => srst,
          key        => key_192,
-         ciphertext => encoder_output_192,
-         plaintext  => decoder_output_192,
+         ciphertext => input_dec_192,
+         plaintext  => plaintext_192,
          start      => start_dec_192,
+         clear      => clear_dec_192,
          done       => done_dec_192);
          
    decoder_inst_128 : entity aes.Decipher
@@ -177,9 +143,10 @@ begin
          clk        => clk,
          srst       => srst,
          key        => key_128,
-         ciphertext => encoder_output_128,
-         plaintext  => decoder_output_128,
+         ciphertext => input_dec_128,
+         plaintext  => plaintext_128,
          start      => start_dec_128,
+         clear      => clear_dec_128,
          done       => done_dec_128);
          
          
