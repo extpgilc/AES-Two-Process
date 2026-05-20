@@ -60,6 +60,12 @@ architecture rtl of Cipher is
 begin
 
    ------------------------------------------------------------------------------------------------
+   -- Asynchronous assignments
+   ------------------------------------------------------------------------------------------------
+   ciphertext <= r.state;
+   done       <= '1' when r.machine_state = FINAL_STATE_S else '0';
+
+   ------------------------------------------------------------------------------------------------
    -- Combinational logic
    ------------------------------------------------------------------------------------------------
    comb : process (r, srst, start, clear, key, plaintext)
@@ -69,7 +75,6 @@ begin
       
       case (r.machine_state) is
          when IDLE_S =>
-            done            <= '0';
             if start = '1' then
                v.state         := plaintext;
                v.machine_state := KEY_SCHEDULE_S;
@@ -124,8 +129,6 @@ begin
             end if;
             
          when FINAL_STATE_S =>
-            ciphertext <= r.state;
-            done       <= '1';
             if clear = '1' then
                v := REG_INIT_C;
             end if;

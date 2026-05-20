@@ -60,6 +60,12 @@ architecture rtl of Decipher is
 begin
 
    ------------------------------------------------------------------------------------------------
+   -- Asynchronous assignments
+   ------------------------------------------------------------------------------------------------
+   plaintext <= r.state;
+   done      <= '1' when r.machine_state = FINAL_STATE_S else '0';
+
+   ------------------------------------------------------------------------------------------------
    -- Combinational logic
    ------------------------------------------------------------------------------------------------
    comb : process (r, srst, start, clear, key, ciphertext)
@@ -69,7 +75,6 @@ begin
       
       case (r.machine_state) is
          when IDLE_S =>
-            done            <= '0';
             if start = '1' then
                v.state         := ciphertext;
                v.machine_state := KEY_SCHEDULE_S;
@@ -115,8 +120,6 @@ begin
             v.machine_state := INV_SHIFT_ROWS_S;
          
          when FINAL_STATE_S =>
-            plaintext <= r.state;
-            done      <= '1';
             if clear = '1' then
                v := REG_INIT_C;
             end if;
